@@ -1,0 +1,79 @@
+<%- include("partials/header.ejs") -%>
+<link rel="stylesheet" href="/css/topic.css">
+    <%- include("partials/navbar.ejs") -%>
+
+        <div class="topic-body">
+            <div class="topic-content">
+                <div class="banner-container"><img src="<%= topic.topicBanner %>" alt="/images/defaultBanner.jpg"></div>
+                <div class="topic-title">
+                    <div class="topic-photo"><img src="<%= topic.topicPhoto %>" alt="topic photo"></div>
+                    <div class="title-cont"><span>
+                            <%= topic.topicName %>
+                        </span>
+                        
+                            <% if (user != null) { %>
+                                <% if(topic.topicCreator == user._id || user.topicsFollowed.includes(topic._id)){ %>
+                                    <button class="join-button joined" id= "<%=topic._id %>">Joined</button>
+                                <% } else { %>
+                                    <button class="join-button join" id = "<%=topic._id %>">Join</button>
+                                <% }%>
+                            <% } else { %>
+                                <button class="join-button">Join</button>
+                            <% } %>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="topic-boxes">
+
+            <div class="postBox">
+                <% posts.forEach(function(post){ %>
+                        <div class="post">
+                            <div class="post-details">
+                                <span class="postTopic">
+                                    <%= post.postTopic %>
+                                </span>
+                                <span class="postAuthor">
+                                    <%= post.postCreatorName %>
+                                </span>
+                                <span class="postDate">
+                                    <%= post.postCreated %>
+                                </span>
+                            </div>
+                            <h2 class="postTitle">
+                                <%= post.postTitle %>
+                            </h2>
+                            <% if(post.postImage !=''){ %>
+                                <div class="postImage">
+                                    <img src="<%= post.image %>" alt="/images/defaultPostImg.jpg" class="postImage">
+                                </div>
+                            <% } else { %>
+                                <p class="postContent">
+                                    <%= post.postContent %>
+                                </p>
+                            <% } %>
+                                    <div class="bottom-buttons">
+                                        <button class="postButton">Enter Discussion <i
+                                                class="fa-solid fa-right-to-bracket"></i></button>
+                                        <button class="postButton">Save<i class="fa-regular fa-bookmark"></i></button>
+                                    </div>
+                        </div>
+                    
+                    
+                    <% }); %>
+            </div>
+            <div class="topic-desc">
+                <span>
+                    About the topic
+                </span>
+                <p>
+                    <%= topic.topicDescription %>
+                </p>
+                <hr>
+                <a href="/post/createPost"><button>Create Post</button></a>
+            </div>
+        </div>
+        </div>
+
+    <%- include("partials/footer.ejs") -%>

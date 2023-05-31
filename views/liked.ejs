@@ -1,0 +1,81 @@
+<%- include("partials/header.ejs") -%>
+    <%- include("partials/navbar.ejs") -%>
+    <div class="content-body">
+        <%- include("partials/sidebar.ejs") -%>
+        <div class="postBox">
+            <% posts.forEach(function(post){ %>
+                <div class="post <%= post._id %>">
+                    <div class="post-details <%= post._id %>">
+                        <span class="postTopic">
+                            <%= post.postTopic %>
+                        </span>
+                        <span class="postAuthor">
+                            <%= post.postCreatorName %>
+                        </span>
+                        <span class="postDate">
+                            <%= post.postCreated %>
+                        </span>
+                    </div>
+                    <h2 class="postTitle"><a href="/post/<%= post._id %>">
+                            <%= post.postTitle %>
+                        </a></h2>
+                    <% if(post.postImage !=null && post.postImage!='' ){ %>
+                        <div class="postImage <%= post._id %>">
+                            <a href="/post/<%= post._id %>"><img src="<%= post.postImage %>" alt="post image"
+                                    class="postImage"></a>
+                        </div>
+                        <% } else { %>
+                            <div class="postContent <%= post._id %>">
+                                <p>
+                                    <%= post.postContent %>
+                                </p>
+                            </div>
+                            <% } %>
+                                <div class="bottom-buttons">
+                                    <div>
+                                        <% if (user.postsLiked.includes(post._id)) { %>
+                                            <button class="postButton <%= post._id %> liked" id="likebutton"><i
+                                                    class="fa-solid <%= post._id %> fa-thumbs-up"></i><span id="likes">
+                                                    <%= post.likes %>
+                                                </span></button>
+                                            <% } else { %>
+                                                <button class="postButton <%= post._id %> like" id="likebutton"><i
+                                                        class="fa-regular <%= post._id %> fa-thumbs-up"></i><span
+                                                        id="likes">
+                                                        <%= post.likes %>
+                                                    </span></button>
+                                                <% } %>
+                                                    <% if (user.postsDisliked.includes(post._id)) { %>
+                                                        <button class="postButton <%= post._id %> disliked"
+                                                            id="dislikebutton"><i
+                                                                class="fa-solid <%= post._id %> fa-thumbs-down"></i><span
+                                                                id="dislikes">
+                                                                <%= post.dislikes %>
+                                                            </span></button>
+                                                        <% } else { %>
+                                                            <button class="postButton <%= post._id %> dislike"
+                                                                id="dislikebutton"><i
+                                                                    class="fa-regular <%= post._id %> fa-thumbs-down"></i><span
+                                                                    id="dislikes">
+                                                                    <%= post.dislikes %>
+                                                                </span></button>
+                                                            <% } %>
+
+                                                                <a href="/post/<%= post._id %>"><button
+                                                                        class="postButton">Comment <i
+                                                                            class="fa-solid <%= post._id %> fa-comment"></i></button></a>
+                                    </div>
+                                    <% if (user.savedPosts.includes(post._id)) { %>
+                                        <button class="postButton <%= post._id %> saved" id="savebutton">Save <i
+                                                class="fa-solid <%= post._id %> fa-bookmark"></i></button>
+                                        <% } else { %>
+                                            <button class="postButton <%= post._id %> save" id="savebutton">Save
+                                                <i class="fa-regular <%= post._id %> fa-bookmark"></i></button>
+                                            <% } %>
+                                </div>
+                </div>
+                <% } ); %>
+        </div>
+        <%- include("partials/about-sidebar.ejs") -%>
+        </div>
+        <%- include("partials/footer.ejs") -%>
