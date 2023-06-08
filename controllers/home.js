@@ -24,8 +24,8 @@ const getPosts = async function (topicFollowed) {
             if(counter1 > counter2){
                 break;
             }
-            const post1 = await Post.find({postTopic: topicFollowed[counter1].topicName}, 'postTitle postCreatorID postTopic postContent postCreated').sort({postCreated: -1}).limit(10-posts.length);
-            const post2 = await Post.find({postTopic: topicFollowed[counter2].topicName}, 'postTitle postCreatorID postTopic postContent postCreated').sort({postCreated: -1}).limit(10-posts.length);
+            const post1 = await Post.find({postTopic: topicFollowed[counter1].topicName}, 'postTitle postCreatorName postTopic postContent postCreated postImage').sort({postCreated: -1}).limit(10-posts.length);
+            const post2 = await Post.find({postTopic: topicFollowed[counter2].topicName}, 'postTitle postCreatorName postTopic postContent postCreated postImage').sort({postCreated: -1}).limit(10-posts.length);
             posts = posts.concat(post1);
             posts = posts.concat(post2);
             counter1++;

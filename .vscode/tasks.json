@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "npm install and run node server",
+            "type": "shell",
+            "command": "npm install",
+            "presentation": {
+                "panel": "dedicated",
+                "group": "dev"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        },
+        {
+            "label": "start-node-server",
+            "type": "shell",
+            "command": "npx nodemon index.js",
+            "presentation": {
+                "panel": "dedicated",
+                "group": "dev"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        }
+    ]
+}

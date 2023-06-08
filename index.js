@@ -5,7 +5,12 @@ const bodyParser = require('body-parser');
 const app = express();
 const cors = require('cors');
 
-app.use(cors());
+app.use(cors(
+    {
+        origin: true,
+        credentials: true
+    }
+));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
@@ -14,16 +19,22 @@ app.use(express.json());
 
 const passport = require('passport');
 const session = require('express-session');
-const passportLocalMongoose = require("passport-local-mongoose");
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false
+    credentials: true,
+    resave: true,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 7
+    }
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 const homeRouter = require('./routes/home.js');
 app.use('/', homeRouter);
