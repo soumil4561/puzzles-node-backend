@@ -84,6 +84,9 @@ router.post('/login', (req, res) => {
                 //first store session id in session collection
                 const sessionID = req.sessionID;
                 const userID = req.user.id;
+                const email = req.user.email;
+                const username = req.user.username;
+                const profilePhoto = req.user.profilePhoto;
                 const sessionCreated = Date.now();
                 const sessionData = {
                     sessionID: sessionID,
@@ -94,7 +97,12 @@ router.post('/login', (req, res) => {
                 res.send({
                     success: true,
                     message: 'Authentication successful',
-                    user: userID,
+                    user:{
+                        userID: userID,
+                        email: email,
+                        username: username,
+                        profilePhoto: profilePhoto
+                    },
                     redirect: '/home'
                 })
             });
