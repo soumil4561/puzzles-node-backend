@@ -12,7 +12,7 @@ const postSchema = new Schema({
         required: true
     },
 
-    postImage:{
+    postImageFile:{
         type: String,
         default:'',
         required: false
@@ -21,6 +21,11 @@ const postSchema = new Schema({
     postTopic:{
         type: String,
         required: true
+    },
+
+    postTopicID:{
+        type: Schema.Types.ObjectId,
+        ref: "Topic"
     },
 
     postCreated:{

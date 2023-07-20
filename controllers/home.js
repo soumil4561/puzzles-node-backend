@@ -15,27 +15,27 @@ const getUserFollowedTopics  = async function (userId) {
     }
 }
 
-const getPosts = async function (topicFollowed) {
+const getInitialPosts = async function (topicFollowed) {
     try{
-        let posts = [];
-        let counter1 = 0;
-        let counter2 = topicFollowed.length - 1;
-        while(posts.length < 10){
-            if(counter1 > counter2){
-                break;
-            }
-            const post1 = await Post.find({postTopic: topicFollowed[counter1].topicName}, 'postTitle postCreatorName postTopic postContent postCreated postImage').sort({postCreated: -1}).limit(10-posts.length);
-            const post2 = await Post.find({postTopic: topicFollowed[counter2].topicName}, 'postTitle postCreatorName postTopic postContent postCreated postImage').sort({postCreated: -1}).limit(10-posts.length);
-            posts = posts.concat(post1);
-            posts = posts.concat(post2);
-            counter1++;
-            counter2--;
-        }
+        const posts = await Post.find({postTopic: {$in: topicFollowed}}, 'postTitle postCreatorName postTopic postContent postCreated postImageFile').sort({postCreated: -1}).limit(8);
         return posts;
-    }
+        }
+        
     catch(err){
         console.log(err);
     }
 }
 
-module.exports = {getUserFollowedTopics, getPosts};
+const getMorePosts = async function (topicFollowed, lastPostIDTime) {
+    try{
+        const posts = await Post.find({postTopic: {$in: topicFollowed}, postCreated: {$lt: lastPostIDTime}}, 'postTitle postCreatorName postTopic postContent postCreated postImageFile').sort({postCreated: -1}).limit(1);
+        console.log(posts);
+        return posts;
+    }
+    catch(err){
+        console.log(err);
+    }
+
+}
+
+module.exports = {getUserFollowedTopics, getInitialPosts, getMorePosts};

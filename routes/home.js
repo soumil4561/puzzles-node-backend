@@ -4,25 +4,48 @@ const mongoose = require("../config/db");
 const Topic = require("../models/topic.js");
 const Post = require("../models/post.js");
 const User = require("../models/user.js");
-const Session = require("../models/session.js");
-const { getUserFollowedTopics, getPosts } = require("../controllers/home.js");
+const { getUserFollowedTopics, getInitialPosts, getMorePosts } = require("../controllers/home.js");
 
 router.get("/", (req, res) => {
   res.redirect("/home");
 });
 
 router.get("/home", async (req, res) => {
-  console.log(req.isAuthenticated());
   if (req.isAuthenticated()) {
-    const user = await User.findOne({ _id: req.user.id });
-    const topics = await getUserFollowedTopics(req.user.id);
-    const posts = await getPosts(topics);
-    
-    res.send({ posts: posts, user: user, topics: topics });
+      const user = await User.findOne({ _id: req.user.id });
+      const topics = await getUserFollowedTopics(req.user.id);
+      const topicName = [];
+      topics.map((topic) => {
+        topicName.push(topic.topicName);
+      });
+      const posts = await getInitialPosts(topicName);
+      
+      res.send({ posts: posts, user: user, topics: topics });
   } else {
-    res.redirect("/auth/login");
+    res.send("Bad Request");
   }
 });
+
+router.post("/home", async (req, res) => {
+  if (req.isAuthenticated()) {
+    const userID = req.user.id;
+    console.log(req.body);
+    const lastPostIDTime = req.body.lastPostIDTime;
+    const topics = await getUserFollowedTopics(userID);
+    const topicName = [];
+      topics.map((topic) => {
+        topicName.push(topic.topicName);
+      });
+    const posts = await getMorePosts(topics, lastPostIDTime);
+    
+    res.send({ posts: posts });
+  } 
+  else {
+    res.send("Bad Request");
+  }
+});
+
+
 
 router.get("/home/liked", async (req, res) => {
   if (req.isAuthenticated()) {
@@ -31,7 +54,7 @@ router.get("/home/liked", async (req, res) => {
     const topics = await getUserFollowedTopics(req.user.id);
     res.send({ posts: posts, user: user, topics: topics });
   } else {
-    res.redirect("/auth/login");
+    res.redirect("Bad Request");
   }
 });
 

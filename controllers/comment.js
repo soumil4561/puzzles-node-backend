@@ -3,11 +3,8 @@ const Post = require('../models/post');
 const User = require('../models/user');
 
 const addComment = async (comment, postID, userID) =>{
-    console.log("addComment");
     try{
-        console.log(comment);
         const savedcomment = await comment.save();
-        console.log(savedcomment);
         await Post.updateOne({_id: postID}, {$push: {comments: savedcomment._id}});
         await User.updateOne({_id: userID}, {$push: {commentsCreated: savedcomment._id}});
         return savedcomment;
@@ -20,28 +17,40 @@ const addComment = async (comment, postID, userID) =>{
 const likeComment = async (commentID, userID) =>{
     // Check if user has already liked the comment
     if(await User.findOne({_id: userID, commentsLiked: commentID}) != null){
-        return Comment.findOne({_id: commentID},"likes, dislikes");
+        // Reduce like count by 1
+        User.updateOne({_id: userID}, {$pull: {commentsLiked: commentID}});
+        const current = await Comment.findOne({_id: commentID}, "commentLikes commentDislikes");
+        var updatedLikes = current.commentLikes - 1;
+        const body = {commentLikes: updatedLikes, commentDislikes: current.commentDislikes};
+        Comment.updateOne({_id: commentID}, body);
+        return body;
     }
     // Check if user has already disliked the comment
     if(await User.findOne({_id: userID, commentsDisliked: commentID}) != null){
         User.updateOne({_id: userID}, {$pull: {commentsDisliked: commentID}});
-        const current = await Comment.findOne({_id: commentID}, "dislikes");
-        var updatedDislikes = current.dislikes - 1;
-        const body = {dislikes: updatedDislikes};
+        const current = await Comment.findOne({_id: commentID}, "commentDislikes");
+        var updatedDislikes = current.commentDislikes - 1;
+        const body = {commentDislikes: updatedDislikes};
         Comment.updateOne({_id: commentID}, body);
     }
-    User.updateOne({_id: userID}, {$push: {commentsLiked: commentID}});
-    const current = await Comment.findOne({_id: commentID}, "likes dislikes");
-    var updatedLikes = current.likes + 1;
-    const body = {likes: updatedLikes};
-    Comment.updateOne({_id: commentID}, body);
+    await User.updateOne({_id: userID}, {$push: {commentsLiked: commentID}});
+    const current = await Comment.findOne({_id: commentID}, "commentLikes commentDislikes");
+    var updatedLikes = current.commentLikes + 1;
+    const body = {likes: updatedLikes, dislikes: current.commentDislikes};
+    await Comment.updateOne({_id: commentID}, body);
     return body;
 }
 
 const dislikeComment = async (commentID, userID) =>{
     // Check if user has already disliked the comment
     if(await User.findOne({_id: userID, commentsDisliked: commentID}) != null){
-        return Comment.findOne({_id: commentID},"likes, dislikes");
+        // Reduce dislike count by 1
+        User.updateOne({_id: userID}, {$pull: {commentsDisliked: commentID}});
+        const current = await Comment.findOne({_id: commentID}, "likes dislikes");
+        var updatedDislikes = current.dislikes - 1;
+        const body = {dislikes: updatedDislikes, likes: current.likes};
+        Comment.updateOne({_id: commentID}, body);
+        return body;
     }
     // Check if user has already liked the comment
     if(await User.findOne({_id: userID, commentsLiked: commentID}) != null){

@@ -5,44 +5,45 @@ const User = require('../models/user.js');
 const Topic = require('../models/topic.js');
 const Comment = require('../models/comment.js');
 const {getUserFollowedTopics} = require('../controllers/home.js');
-const {createPost, likePost, dislikePost, savePost, unsavePost, deletePost} = require('../controllers/post.js');
-
-router.get("/createPost", (req, res) => {
-    if(req.isAuthenticated()) {
-        const topics = getUserFollowedTopics(req.user.id);
-        res.render('createPost.ejs', {topics: topics, user: req.user});
-    }  
-    else {
-        res.redirect('/auth/login');
-    }
-});
+const {createPost, likePost, dislikePost, savePost, getUserPostInfo, deletePost} = require('../controllers/post.js');
+const {handleImages} = require('../controllers/images.js');
 
 router.post("/createPost", async(req, res) => {
+    const data = JSON.parse(await handleImages(req));
     if(req.isAuthenticated()) {
         const post = new Post({
-            postTitle: req.body.postTitle,
-            postContent: req.body.postContent,
+            postTitle: data.postTitle,
+            postContent: data.postContent,
             postCreatorID: req.user.id,
             postCreated: Date.now(),
-            postTopic: req.body.postTopic,
+            postTopic: data.postTopic,
+            postTopicID: data.postTopicID,
+            postImageFile: data.postImageFile,
             likes: 0,
             dislikes: 0,
             comments: []
         });
-        if(req.body.postImage != null) {
-            post.postImage = req.body.postImage;
-        }
         if(req.user.username != null) {
             post.postCreatorName = req.user.username;
         }
         const savedpost = await createPost(post);
-        console.log(savedpost);
-        return savedpost;
+        await Topic.updateOne({_id: data.postTopicID}, {$push: {topicPosts: savedpost._id}});
+        await User.updateOne({_id: req.user.id}, {$push: {postsCreated: savedpost._id}});
+        res.send({redirect: '/posts/'+savedpost._id, postID: savedpost._id});
     }
     else {
         res.redirect('/auth/login');
     }
 });
+
+router.patch("/:postID/uploadPostImage", async (req, res) => {
+    const image = await handleImages(req);
+    const postID = req.params.postID;
+    await Post.updateOne({_id: postID}, {postImageFile: image});
+    res.send("Image uploaded");
+    
+    }
+);
 
 router.get("/:postID", async (req, res) => {
     const postID = req.params.postID;
@@ -52,11 +53,7 @@ router.get("/:postID", async (req, res) => {
         const comment = await Comment.findOne({_id: post.comments[i]});
         comments.push(comment);
     }
-    if(req.isAuthenticated()){
-        res.render('post.ejs', {post: post, comments: comments, user: req.user});
-    } else {
-        res.render('post.ejs', {post: post, comments: comments, user: null});
-    }
+    res.send({post: post, comments: comments});
 });
 
 router.post("/:postID/function", async (req, res) => {
@@ -64,18 +61,22 @@ router.post("/:postID/function", async (req, res) => {
     const type = req.body.type;
     if(req.isAuthenticated()){
         if(type == "like"){
-            return likePost(postID, req.user.id);
+            res.send(await likePost(postID, req.user.id));
         }
         else if(type == "dislike"){
-            return dislikePost(postID, req.user.id);
+            res.send(await dislikePost(postID, req.user.id));
         }
         else if(type == "save"){
-            return savePost(postID, req.user.id);
+            res.send(await savePost(postID, req.user.id));
         }
-        else if(type == "unsave"){
-            return unsavePost(postID, req.user.id);
-        }
-        res.redirect('/post/'+postID);
+    }
+});
+
+router.get("/:postID/user", async (req, res) => {
+    if(req.isAuthenticated()){
+        const postID = req.body.postID;
+        const userID = req.user.id;
+        res.send(await getUserPostInfo(postID, userID));
     }
 });
 

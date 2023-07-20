@@ -4,66 +4,47 @@ const Topic = require('../models/topic.js');
 const User = require('../models/user.js');
 const Post = require('../models/post.js');
 const {createTopic, joinTopic, leaveTopic} = require('../controllers/topic.js');
+const {handleImages} = require('../controllers/images.js');
 
-router.get("/createTopic", (req, res) => {
+router.post("/createTopic", async (req,res) => {
+    const data = JSON.parse(await handleImages(req));
     if(req.isAuthenticated()) {
-        res.render('createTopic',{user: req.user});
-    }  
-    else {
-        res.redirect('/auth/login');
-    }
-});
-
-router.post("/createTopic", (req,res) => {
     const topic = new Topic({
-        topicName: req.body.topicName,
-        topicDescription: req.body.topicDescription,
+        topicName: data.topicName,
+        topicDescription: data.topicDescription,
         topicPosts: [],
         topicFollowers: [req.user.id],
         topicCreator: req.user.id,
-        topicCreated: Date.now()
-
+        topicCreated: Date.now(),
+        topicPhoto: data.topicPhoto,
+        topicBanner: data.topicBanner
     });
-    if(req.body.topicPhoto != null) {
-        topic.topicPhoto = req.body.topicPhoto;
+    const savedtopic = await createTopic(topic, req.user.id);
+    res.send({topicName: savedtopic.topicName, topicID: savedtopic._id});
     }
-    if(req.body.topicBanner != null) {
-        topic.topicBanner = req.body.topicBanner;
+    else {
+        res.send("Not logged in");
     }
-    const savedtopic = createTopic(topic, req.user.id);
-    res.redirect('/topic/'+topic.topicName);
 }); 
 
 router.get("/:topicName", async (req, res) => {
-    let user;
-    if(req.isAuthenticated()) {
-        user = await User.findOne({_id: req.user.id});
+    const topic = await Topic.findOne({topicName: req.params.topicName});
+    if(topic == null) {
+        res.send({
+            topic: null,
+            posts: null
+        })
+        return;
     }
-    else {
-        user = null;
+    const posts = [];
+    for(let i = 0; i < topic.topicPosts.length; i++) {
+        const post = await Post.findOne({_id: topic.topicPosts[i]},'postTitle postContent postCreatorName postCreated postTopic postImageFile likes dislikes postTopicID');
+        posts.push(post);
     }
-    try {
-        const topicName = req.params.topicName;
-        const topic = await Topic.findOne({topicName: topicName});
-        const posts = await Post.find({postTopic: topicName}).sort({postCreated: -1}).limit(10);
-        res.render('topic.ejs',{topic: topic, posts: posts, user: user});
-    } catch (error) {
-        console.log(error);
-    }
+    res.send({topic: topic, posts: posts});
 });
 
 router.post("/follow", async (req, res) => {
-    const topicID = req.body.topicID;
-    const type = req.body.type;
-    if(req.isAuthenticated()) {
-        if(type == "leave"){
-            return leaveTopic(topicID,req.user.id);
-        }
-        else if(type == "join") return joinTopic(topicID,req.user.id);
-    }
-    else {
-        res.redirect('/auth/login');
-    }
 });
 
 module.exports = router;

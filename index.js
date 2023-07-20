@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const cors = require('cors');
+const MongoStore = require('connect-mongo');
 
 app.use(cors(
     {
@@ -27,7 +28,11 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 7
-    }
+    },
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_HOST,
+        collectionName: 'sessions'
+    })
 }));
 
 app.use(passport.initialize());
@@ -50,6 +55,9 @@ app.use('/topic', topicRouter);
 
 const utilityRouter = require('./routes/utility.js');
 app.use('/utility', utilityRouter);
+
+const profileRouter = require('./routes/profile.js');
+app.use('/profile', profileRouter);
 
 app.get('*', function(req, res){
     if(req.isAuthenticated()){

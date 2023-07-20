@@ -18,10 +18,17 @@ const createPost = async (post, userID, topicName) => {
 const likePost = async (postID, userID) => {
     //check if user has already liked the post
     if(await User.findOne({_id: userID, postsLiked: postID}) != null) {
-        return {likes: await Post.findOne({_id: postID}, "likes")};
+        //reduce the number of likes by 1
+        await User.updateOne({_id: userID}, {$pull: {postsLiked: postID}});
+        const current = await Post.findOne({_id: postID}, "likes");
+        var updatedLikes = current.likes - 1;
+        const body = {likes: updatedLikes};
+        await Post.updateOne({_id: postID}, body);
+        return body;
     }
     //check if user has already disliked the post
     if(await User.findOne({_id: userID, postsDisliked: postID}) != null) {
+        console.log("disliked");
         await User.updateOne({_id: userID}, {$pull: {postsDisliked: postID}});
         const current = await Post.findOne({_id: postID}, "dislikes");
         var updatedDislikes = current.dislikes - 1;
@@ -39,7 +46,13 @@ const likePost = async (postID, userID) => {
 const dislikePost = async (postID, userID) => {
     //check if user has already disliked the post
     if(await User.findOne({_id: userID, postsDisliked: postID}) != null) {
-        return {dislikes: await Post.findOne({_id: postID}, "dislikes")};
+        //reduce the number of dislikes by 1
+        await User.updateOne({_id: userID}, {$pull: {postsDisliked: postID}});
+        const current = await Post.findOne({_id: postID}, "dislikes");
+        var updatedDislikes = current.dislikes - 1;
+        const body = {dislikes: updatedDislikes};
+        await Post.updateOne({_id: postID}, body);
+        return body;
     }
     //check if user has already liked the post
     if(await User.findOne({_id: userID, postsLiked: postID}) != null) {
@@ -58,21 +71,38 @@ const dislikePost = async (postID, userID) => {
 }
 
 const savePost = async (postID, userID) => {
+    //check if user has already saved the post
     if(await User.findOne({_id: userID, savedPosts: postID}) != null) {
-        return false;
+        try{
+            await User.updateOne({_id: userID}, {$pull: {savedPosts: postID}});
+            return { saved: false, message: "Post unsaved"};
+        }
+        catch(err){
+            console.log(err);
+            return { saved: true, message: "Post could not be unsaved"};
+        }
     }
-    await User.updateOne({_id: userID}, {$push: {savedPosts: postID}})
-    .then(() => {return true}). catch(() => {return false});
-    
+    try{
+        await User.updateOne({_id: userID}, {$push: {savedPosts: postID}});
+        return { saved: true, message: "Post saved"};
+    }
+    catch(err){
+        console.log(err);
+        return { saved: false, message: "Post could not be saved"};
+    }
 }
 
-const unsavePost = async (postID, userID) => {
-    //check if user has already saved the post
-    if(await User.findOne({_id: userID, savedPosts: postID}) == null) {
-        return false;
+const getUserPostInfo = async (postID, userID) => {
+    const body = { liked: false, disliked: false, saved: false };
+    try{
+        if(await User.findOne({_id: userID, postsDisliked: postID}) != null) {
+            body.disliked = true;
+        }
     }
-    await User.updateOne({_id: userID}, {$pull: {savedPosts: postID}})
-    .then(() => {return true}). catch(() => {return false});
+    catch(err){
+        console.log(err);
+    }
+    return body;
 }
 
 const deletePost = async (post) => {
@@ -91,4 +121,5 @@ const deletePost = async (post) => {
     }
 }
 
-module.exports = {createPost, likePost, dislikePost, savePost, unsavePost, deletePost};
+
+module.exports = {createPost, likePost, dislikePost, savePost, getUserPostInfo, deletePost};

@@ -6,7 +6,7 @@ const User = require('../models/user');
 const Topic = require('../models/topic');
 const {addComment, likeComment, dislikeComment, deleteComment} = require('../controllers/comment');
 
-router.post("/createComment", (req, res) => {
+router.post("/createComment", async (req, res) => {
     if(req.isAuthenticated()) {
         const comment = new Comment({
             commentContent: req.body.commentContent,
@@ -19,20 +19,14 @@ router.post("/createComment", (req, res) => {
             commentParent: null,
             commentPost: req.body.commentPost
         });
-        
-        addComment(comment, req.body.commentPost, req.user.id);
-        res.redirect('/post/'+req.body.commentPost);
-    }
-    else {
-        res.redirect('/auth/login');
+        res.send(await addComment(comment, req.body.commentPost, req.user.id));
     }
 });
 
-router.post("/comment", (req, res) => {
+router.post("/comment", async(req, res) => {
     if(req.isAuthenticated()) {
-        if (req.body.type == "like") return likeComment(req.body.commentID, req.user.id);
-        else if (req.body.type == "dislike") return dislikeComment(req.body.commentID, req.user.id);
-        res.redirect('/post/'+req.body.commentPost);
+        if (req.body.type == "like") return (await likeComment(req.body.commentID, req.user.id));
+        else if (req.body.type == "dislike") return (await dislikeComment(req.body.commentID, req.user.id));
     }
     else {
         res.redirect('/auth/login');
@@ -78,6 +72,28 @@ router.get("/searchTopic/:topicName", async (req, res) => {
     .sort({topicFollowers: -1});
     res.send(topicList);
 });
+
+router.get("/getTopicList", async (req, res) => {
+    try{
+        const topics = await Topic.find({}, "topicName topicCreated topicFollowers.length topicPhoto");
+        res.send({success: true, topics: topics});
+    }
+    catch(error){
+        console.log(error);
+        res.send({success: false, error: error});
+    }
+});
+
+router.get("/test", async (req, res) => {
+    res.render("test");
+});
+
+router.post("/test", async (req, res) => {
+    
+});
+
+
+
 
 
 module.exports = router;

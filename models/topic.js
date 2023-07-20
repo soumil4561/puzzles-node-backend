@@ -15,12 +15,12 @@ const topicSchema = new Schema({
 
     topicPhoto: {
         type: String,
-        default: "https://cdn.pixabay.com/photo/2023/03/16/16/38/woods-7857082_1280.jpg"
+        default: ""
     },
 
     topicBanner: {
         type: String,
-        default: "https://cdn.pixabay.com/photo/2016/08/03/09/04/universe-1566161_1280.jpg"
+        default: ""
     },
 
     topicCreator: {

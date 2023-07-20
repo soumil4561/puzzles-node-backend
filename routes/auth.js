@@ -5,7 +5,6 @@ const passport = require('passport');
 var GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 const User = require('../models/user');
-const Session = require('../models/session');
 
 passport.use(User.createStrategy());
 
@@ -28,7 +27,10 @@ passport.use(new GoogleStrategy({
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
 },
     async function (accessToken, refreshToken, profile, cb) {
-        User.findOrCreate({ googleID: profile.id, profilePhoto: profile._json.picture, email: profile._json.email }, function (err, result) {
+        User.findOrCreate({ googleID: profile.id, email: profile._json.email }, function (err, result) {
+            if(err){
+                console.log(err);
+            }
             return cb(err, result);
         });
     }));
@@ -38,6 +40,8 @@ router.post('/register', (req, res) => {
         username: req.body.username,
         email: req.body.email
     });
+
+    
 
     User.register(user, req.body.password, (err, user) => {
         if (err) {
@@ -49,16 +53,7 @@ router.post('/register', (req, res) => {
         }
         else {
             passport.authenticate('local')(req, res, () => {
-                const sessionID = req.sessionID;
-                const userID = req.user.id;
-                const sessionCreated = Date.now();
-                const sessionData = {
-                    sessionID: sessionID,
-                    userID: userID,
-                    sessionCreated: sessionCreated
-                }
-                Session.create(sessionData);
-                res.send({ success: true, message: 'Registration successful', user: userID, sessionID: sessionID, redirect: '/auth/setup' })
+                res.send({ success: true, message: 'Registration successful', userID: req.user.id, redirect: '/register/setup' })
             });
         }
     });
@@ -81,28 +76,9 @@ router.post('/login', (req, res) => {
         }
         else {
             passport.authenticate('local')(req, res, async () => {
-                //first store session id in session collection
-                const sessionID = req.sessionID;
-                const userID = req.user.id;
-                const email = req.user.email;
-                const username = req.user.username;
-                const profilePhoto = req.user.profilePhoto;
-                const sessionCreated = Date.now();
-                const sessionData = {
-                    sessionID: sessionID,
-                    userID: userID,
-                    sessionCreated: sessionCreated
-                }
-                await Session.create(sessionData);
                 res.send({
                     success: true,
                     message: 'Authentication successful',
-                    user:{
-                        userID: userID,
-                        email: email,
-                        username: username,
-                        profilePhoto: profilePhoto
-                    },
                     redirect: '/home'
                 })
             });
@@ -110,25 +86,36 @@ router.post('/login', (req, res) => {
     });
 });
 
-router.post('/logout',  async (req, res) => {
-    const sessionID = req.body.sessionID;
-    await Session.deleteOne({ sessionID: sessionID });
-    req.logout(async function (err) {
-        if (err) {
+router.delete('/logout', (req, res) => {
+    req.logout((err) => {
+        if(err){
             console.log(err);
-        }
-        else {           
             res.send({
-                success: true,
-                message: 'Logout successful',
-                redirect: '/auth/login'
+                success: false,
+                message: 'Logout failed',
+                error: err.message
             })
         }
+        else{
+            req.session.destroy((err) => {
+                if(err){
+                    console.log(err);
+                    res.send({
+                        success: false,
+                        message: 'Logout failed',
+                        error: err.message
+                    })
+                } 
+                else{
+                    res.send({
+                        success: true,
+                        message: 'Logout successful',
+                        redirect: '/auth/login'
+                    })
+                }
+            });
+        }
     });
-});
-
-router.get('/setup', (req, res) => {
-    res.render('setup.ejs', { user: req.user });
 });
 
 router.post('/setup', async (req, res) => {
@@ -140,26 +127,65 @@ router.post('/setup', async (req, res) => {
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'https://www.googleapis.com/auth/userinfo.email'] }));
 
 router.get('/google/home',
-    passport.authenticate('google', { failureRedirect: 'auth/login' }),
+    passport.authenticate('google', 
+    { failureRedirect: 'auth/login',
+    successRedirect: process.env.CLIENT_URL }),
     function (req, res) {
         const userID = req.user.id;
+        const data = {
+            success: true,
+            message: 'Authentication successful',
+            user: {
+                userID: userID,
+                email: req.user.email
+            },
+        }
         if (req.user.username === undefined) {
-            res.redirect('/auth/setup');
+            data.redirect = '/register/setup';
+            res.send(data);
         }
         else {
-            res.redirect('/home');
+            data.redirect = '/home';
+            res.send(data);
         }
     });
 
-router.get("/checksession", async (req, res) => {
-    const sessionID = req.sessionID;
-    const session = await Session.findOne({ sessionID: sessionID });
-    if(req.isAuthenticated() || session){
-        res.send({ success: true, message: 'Session exists', user: req.user.id });
+router.get('/login/success', async (req, res) => {
+    if(req.isAuthenticated()){
+        const userID = req.user.id;
+        const userData = await User.findOne({ _id: userID },'profilePhoto');
+        if(req.user.username === undefined){
+            res.status(200).json({
+                success: true,
+                message: 'Authentication successful',
+                user: {
+                    userID: userID,
+                    profilePhoto: userData.profilePhoto
+                },
+                redirect: '/register/setup'
+            })
+        }
+        else{
+            res.status(200).json({
+                success: true,
+                message: 'Authentication successful',
+                user: {
+                    userID: userID,
+                    username: req.user.username,
+                    profilePhoto: userData.profilePhoto
+                },
+                redirect: '/home'
+            })
+        }
     }
     else{
-        res.send({ success: false, message: 'Session does not exist' });
+        res.status(401).json({
+            success: false,
+            message: 'Authentication failed',
+            error: 'User not logged in'
+        })
     }
 });
+
 
 module.exports = router;
