@@ -82,11 +82,7 @@ router.get("/getTopicList", async (req, res) => {
         console.log(error);
         res.send({success: false, error: error});
     }
-});
-
-router.get("/test", async (req, res) => {
-    res.render("test");
-});
+}); 
 
 router.post("/test", async (req, res) => {
     

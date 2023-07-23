@@ -5,6 +5,8 @@ const User = require('../models/user.js');
 const Post = require('../models/post.js');
 const {createTopic, joinTopic, leaveTopic} = require('../controllers/topic.js');
 const {handleImages} = require('../controllers/images.js');
+const {getUserFollowedTopics} = require('../controllers/home.js');
+
 
 router.post("/createTopic", async (req,res) => {
     const data = JSON.parse(await handleImages(req));
@@ -44,7 +46,50 @@ router.get("/:topicName", async (req, res) => {
     res.send({topic: topic, posts: posts});
 });
 
-router.post("/follow", async (req, res) => {
+router.post("/getUserFollowedTopics", async (req, res) => {
+    if(req.isAuthenticated()) {
+        const topics = await getUserFollowedTopics(req.user.id);
+        res.send({topics:topics});
+    }
+    else {
+        res.send({topics: null});
+    }
+});
+
+router.get("/:topicID/userFollows", async (req, res) => {
+    const topicID = req.params.topicID;
+    if(req.isAuthenticated()) {
+        const topicsFollowed = await User.findOne({_id: req.user.id}, 'topicsFollowed');
+        if(topicsFollowed.topicsFollowed.includes(topicID)) {
+            res.send({follows: true});
+        }
+        else {
+            res.send({follows: false});
+        }
+    }
+    else {
+        res.send({follows: false});
+    }
+});
+
+router.post("/:topicID/follow", async (req, res) => {
+    const topicID = req.params.topicID;
+    if(req.isAuthenticated()) {
+        const user = req.user.id;
+        if(await User.findOne({_id: user, topicsFollowed: topicID})) {
+            await User.updateOne({_id: user}, {$pull: {topicsFollowed: topicID}});
+            await Topic.updateOne({_id: topicID}, {$pull: {topicFollowers: user}});
+            res.status(200).send({follows: false});
+        }
+        else {
+            await User.updateOne({_id: user}, {$push: {topicsFollowed: topicID}});
+            await Topic.updateOne({_id: topicID}, {$push: {topicFollowers: user}});
+            res.status(200).send({follows: true});
+        }
+    }
+    else{
+        res.redirect("/login");
+    } 
 });
 
 module.exports = router;

@@ -3,32 +3,45 @@ const router = express.Router();
 
 const User = require('../models/user.js');
 const Post = require('../models/post.js');
-const Comment = require('../models/comment.js');
 
-router.get("/:username", async (req, res) => {
-    const user = await User.findOne({username: req.params.username}, 'username userPhoto postsCreated commentsCreated');
-    if(user == null) {
-        res.send({
-            user: null
-        })
-        return;
+router.get("/", async (req, res) => {
+    if(req.isAuthenticated()) {
+        const user = await User.findOne({_id: req.user.id},'username email userCreated');
+        res.status(200).send({user:user});
     }
-    const posts = [];
-    const comments = [];
-    for(let i = 0; i < user.postsCreated.length; i++) {
-        const post = await Post.findOne({_id: user.postsCreated[i]},'postTitle postContent postCreated postTopic postImageFile likes dislikes postTopicID');
-        posts.push(post);
+    else {
+        res.redirect('/login');
     }
-    for(let i = 0; i < user.commentsCreated.length; i++) {
-        const comment = await Comment.findOne({_id: user.commentsCreated[i]},'commentContent commentCreated commentPost commentPostTitle commentPostTopic');
-        comments.push(comment);
+});
+
+router.get("/posts", async (req, res) => {
+    
+    if(req.isAuthenticated()) {
+        const type = req.query.type;
+        if(type === 'created') {
+            const userPosts = await User.findOne({_id: req.user.id},'postsCreated');
+            const posts = await Post.find({_id: {$in: userPosts.postsCreated}},'postTitle postCreated postContent postTopic');
+            res.status(200).send(posts);
+        }
+        else if(type === 'liked') {
+            const userPosts = await User.findOne({_id: req.user.id},'postsLiked');
+            const posts = await Post.find({_id: {$in: userPosts.postsLiked}},'postTitle postCreated postContent postTopic');
+            res.status(200).send(posts);
+        }
+
+        else if(type === 'saved'){
+            const userPosts = await User.findOne({_id: req.user.id},'savedPosts');
+            const posts = await Post.find({_id: {$in: userPosts.savedPosts}},'postTitle postCreated postContent postTopic');
+            res.status(200).send(posts);
+        }
+
+        else {
+            res.status(400).send({message:"Invalid type"});
+        }
     }
-    // for(let i = 0; i < comments.length; i++) {
-    //     const post = await Post.findOne({_id: comments[i].commentPost}, 'postTitle postTopic');
-    //     comments[i].commentPostTitle = post.postTitle;
-    //     comments[i].commentPostTopic = post.postTopic;
-    // }
-    res.send({user: user, posts: posts});
+    else {
+        res.redirect('/login');
+    }
 });
 
 module.exports = router;

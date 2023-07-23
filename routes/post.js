@@ -118,7 +118,7 @@ router.get("/:postID/edit", async (req, res) => {
     const postID = req.params.postID;
     if (req.isAuthenticated()) {
         const post = await Post.findOne({_id: postID});
-        res.render('editPost.ejs', {post: post});
+        
     }
     else {
         res.redirect('/auth/login');

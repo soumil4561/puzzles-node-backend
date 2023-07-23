@@ -14,9 +14,11 @@ app.use(cors(
 ));
 
 app.use(bodyParser.urlencoded({ extended: true }));
-app.set('view engine', 'ejs');
-app.use(express.static('public'));
 app.use(express.json());
+
+const path = require('path');
+
+app.use(express.static(path.join(__dirname, '/public')));
 
 const passport = require('passport');
 const session = require('express-session');
@@ -60,11 +62,7 @@ const profileRouter = require('./routes/profile.js');
 app.use('/profile', profileRouter);
 
 app.get('*', function(req, res){
-    if(req.isAuthenticated()){
-        res.status(404).render('404.ejs', {user: req.user});
-    } else {
-        res.status(404).render('404.ejs', {user: null});
-    }
+    res.status(404).send('404');
   });
 
 const PORT = process.env.PORT || 3000;
