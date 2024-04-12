@@ -27,18 +27,16 @@ const likePost = async (postID, userID) => {
         return body;
     }
     //check if user has already disliked the post
+    let current = await Post.findOne({_id: postID}, "dislikes likes");
+    let body = {};
+    var dislikes = current.dislikes;
     if(await User.findOne({_id: userID, postsDisliked: postID}) != null) {
-        console.log("disliked");
         await User.updateOne({_id: userID}, {$pull: {postsDisliked: postID}});
-        const current = await Post.findOne({_id: postID}, "dislikes");
-        var updatedDislikes = current.dislikes - 1;
-        const body = {dislikes: updatedDislikes};
-        await Post.updateOne({_id: postID}, body);
+        dislikes = current.dislikes - 1;
     }
     await User.updateOne({_id: userID}, {$push: {postsLiked: postID}});
-    const current = await Post.findOne({_id: postID}, "likes dislikes");
-    var updatedLikes = current.likes + 1;
-    const body = {likes: updatedLikes};
+    var likes = current.likes + 1;
+    body = {likes: likes, dislikes: dislikes};
     await Post.updateOne({_id: postID}, body);
     return body;
 }
@@ -55,18 +53,17 @@ const dislikePost = async (postID, userID) => {
         return body;
     }
     //check if user has already liked the post
+    let current = await Post.findOne({_id: postID}, "dislikes likes");
+    let body = {};
+    var likes = current.likes;
     if(await User.findOne({_id: userID, postsLiked: postID}) != null) {
         await User.updateOne({_id: userID}, {$pull: {postsLiked: postID}});
-        const currentLikes = await Post.findOne({_id: postID}, "likes");
-        var updatedLIkes = currentLikes.likes - 1;
-        const body = {likes: updatedLIkes};
-        await Post.updateOne({_id: postID}, body);
+        likes = current.likes - 1;
     }
     await User.updateOne({_id: userID}, {$push: {postsDisliked: postID}});
-    const current = await Post.findOne({_id: postID}, "likes dislikes");
-    var updatedDislikes = current.dislikes + 1;
-    const body = {likes: current.likes, dislikes: updatedDislikes};
-    Post.updateOne({_id: postID}, body);
+    var dislikes = current.dislikes + 1;
+    body = {dislikes: dislikes, likes: likes};
+    await Post.updateOne({_id: postID}, body);
     return body;
 }
 

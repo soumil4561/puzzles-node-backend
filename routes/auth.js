@@ -41,8 +41,6 @@ router.post('/register', (req, res) => {
         email: req.body.email
     });
 
-    
-
     User.register(user, req.body.password, (err, user) => {
         if (err) {
             console.log(err);
@@ -118,7 +116,7 @@ router.delete('/logout', (req, res) => {
     });
 });
 
-router.post('/setup', async (req, res) => {
+router.post('/register/setup', async (req, res) => {
     const UserID = req.user.id;
     await User.updateOne({ _id: UserID }, { username: req.body.username, email: req.user.email });
     res.redirect('/home');

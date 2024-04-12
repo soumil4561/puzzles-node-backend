@@ -46,6 +46,19 @@ router.get("/:topicName", async (req, res) => {
     res.send({topic: topic, posts: posts});
 });
 
+router.get("/:topicName/about", async (req, res) => {
+    const topic = await Topic.findOne({topicName: req.params.topicName});
+    if(topic == null) res.send(null);
+    const data = {
+        topicName: topic.topicName,
+        topicDescription: topic.topicDescription,
+        topicFollowers: topic.topicFollowers.length,
+        topicPosts: topic.topicPosts.length,
+        topicCreated: topic.topicCreated
+    }
+    res.status(200).send(data);
+});
+
 router.post("/getUserFollowedTopics", async (req, res) => {
     if(req.isAuthenticated()) {
         const topics = await getUserFollowedTopics(req.user.id);

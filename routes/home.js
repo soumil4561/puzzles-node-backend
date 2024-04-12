@@ -6,6 +6,8 @@ const Post = require("../models/post.js");
 const User = require("../models/user.js");
 const { getUserFollowedTopics, getInitialPosts, getMorePosts } = require("../controllers/home.js");
 
+
+
 router.get("/", (req, res) => {
   res.redirect("/home");
 });
@@ -42,6 +44,17 @@ router.post("/home", async (req, res) => {
   } 
   else {
     res.send("Bad Request");
+  }
+});
+
+router.get("/home/about", async (req, res) => {
+  if(req.isAuthenticated()){
+    const userID = req.user.id;
+    const data = await User.findOne({_id: userID},'username topicsFollowed postsCreated topicsCreated');
+    data.topicsFollowed = data.topicsFollowed.length;
+    data.postsCreated = data.postsCreated.length;
+    data.topicsCreated = data.topicsCreated.length;
+    res.status(200).send(data);
   }
 });
 

@@ -7,18 +7,32 @@ const Comment = require('../models/comment.js');
 const {getUserFollowedTopics} = require('../controllers/home.js');
 const {createPost, likePost, dislikePost, savePost, getUserPostInfo, deletePost} = require('../controllers/post.js');
 const {handleImages} = require('../controllers/images.js');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs')
 
-router.post("/createPost", async(req, res) => {
-    const data = JSON.parse(await handleImages(req));
+
+ var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'data/')
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + path.extname(file.originalname)) //Appending extension
+    }
+  })
+
+const upload = multer({ storage: storage });
+
+router.post("/createPost", upload.any(), async(req, res) => {
     if(req.isAuthenticated()) {
         const post = new Post({
-            postTitle: data.postTitle,
-            postContent: data.postContent,
+            postTitle: req.body.postTitle,
+            postContent: req.body.postContent,
             postCreatorID: req.user.id,
             postCreated: Date.now(),
-            postTopic: data.postTopic,
-            postTopicID: data.postTopicID,
-            postImageFile: data.postImageFile,
+            postTopic: req.body.postTopic,
+            postTopicID: req.body.postTopicID,
+            postImageFile: req.files[0].filename,
             likes: 0,
             dislikes: 0,
             comments: []
@@ -27,7 +41,7 @@ router.post("/createPost", async(req, res) => {
             post.postCreatorName = req.user.username;
         }
         const savedpost = await createPost(post);
-        await Topic.updateOne({_id: data.postTopicID}, {$push: {topicPosts: savedpost._id}});
+        await Topic.updateOne({_id:req.body.postTopicID}, {$push: {topicPosts: savedpost._id}});
         await User.updateOne({_id: req.user.id}, {$push: {postsCreated: savedpost._id}});
         res.send({redirect: '/posts/'+savedpost._id, postID: savedpost._id});
     }
@@ -36,14 +50,34 @@ router.post("/createPost", async(req, res) => {
     }
 });
 
-router.patch("/:postID/uploadPostImage", async (req, res) => {
-    const image = await handleImages(req);
-    const postID = req.params.postID;
-    await Post.updateOne({_id: postID}, {postImageFile: image});
-    res.send("Image uploaded");
-    
+router.patch("/updatePost", upload.any(), async (req, res) => {
+    const postID = req.body.postID;
+    const savedPost = await Post.findOne({_id:postID},"postCreatorID");
+    const body = {};
+    console.log(req.user.id)
+    console.log(savedPost);
+    if (savedPost.postCreatorID.equals(req.user.id)){
+        //make changes
+        if(req.body.postTitle) body.postTitle = req.body.postTitle;
+        if(req.body.postContent) body.postContent = req.body.postContent;
+        if(req.files){
+            if(savedPost.postImageFile!=null){
+                fs.unlink('data/'+savedPost.postImageFile, (err) => {
+                    if (err) throw err;
+                    console.log('path/file.txt was deleted');
+                  }); 
+            }
+            body.postImageFile = req.files[0].filename;
+        }
+        await Post.updateOne({_id:postID},body).then((result) => {
+            console.log("Post updated");
+            res.json({redirect: '/post/'+postID});
+        }).catch((err) => console.log(err));
     }
-);
+
+        
+    else res.status(406).send("Only the post creator can update post."); 
+});
 
 router.get("/:postID", async (req, res) => {
     const postID = req.params.postID;
@@ -56,9 +90,10 @@ router.get("/:postID", async (req, res) => {
     res.send({post: post, comments: comments});
 });
 
-router.post("/:postID/function", async (req, res) => {
+router.post("/function", async (req, res) => {
     const postID = req.body.postID;
     const type = req.body.type;
+    
     if(req.isAuthenticated()){
         if(type == "like"){
             res.send(await likePost(postID, req.user.id));
@@ -66,7 +101,7 @@ router.post("/:postID/function", async (req, res) => {
         else if(type == "dislike"){
             res.send(await dislikePost(postID, req.user.id));
         }
-        else if(type == "save"){
+        else if(type == "save"){ 
             res.send(await savePost(postID, req.user.id));
         }
     }
@@ -74,9 +109,10 @@ router.post("/:postID/function", async (req, res) => {
 
 router.get("/:postID/user", async (req, res) => {
     if(req.isAuthenticated()){
-        const postID = req.body.postID;
+        const postID = req.params.postID;
         const userID = req.user.id;
-        res.send(await getUserPostInfo(postID, userID));
+        res.send(postID, userID);
+        //res.send(await getUserPostInfo(postID, userID));
     }
 });
 
@@ -113,15 +149,5 @@ router.patch("/:postID", async (req, res) => {
         }).catch((err) => console.log(err));
     }
 });
-
-router.get("/:postID/edit", async (req, res) => {
-    const postID = req.params.postID;
-    if (req.isAuthenticated()) {
-        const post = await Post.findOne({_id: postID});
-        
-    }
-    else {
-        res.redirect('/auth/login');
-}});
 
 module.exports = router;
