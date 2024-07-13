@@ -17,6 +17,15 @@ const getHome = async (userId) => {
     { $limit: 10 },
   ]);
 
+  if(posts.length<10){
+    const morePosts = await Post.aggregate([
+      { $match: { topic: { $nin: followedTopics.map((topic) => topic._id) } } },
+      { $sort: { createdAt: -1 } },
+      { $limit: 10 - posts.length },
+    ]);
+    posts.push(...morePosts);
+  }
+
   return posts;
 };
 
@@ -35,6 +44,16 @@ const getMorePosts = async (userId, page, limit) => {
         { $skip: skip },
         { $limit: limit },
     ]);
+
+    if(posts.length<limit){
+        const morePosts = await Post.aggregate([
+            { $match: { topic: { $nin: followedTopics.map((topic) => topic._id) } } },
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit - posts.length },
+        ]);
+        posts.push(...morePosts);
+    }
 
     return posts;
 }

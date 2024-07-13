@@ -7,3 +7,4 @@ module.exports.topicService = require('./topic.service');
 module.exports.homeService = require('./home.service');
 module.exports.commentService = require('./comment.service');
 module.exports.mediaService = require('./media.service');
+module.exports.cloudinaryService = require('./cloudinary.service');

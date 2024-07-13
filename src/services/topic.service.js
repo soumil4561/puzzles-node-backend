@@ -27,7 +27,7 @@ const getFollowedTopics = async (userID) => {
 }
 
 const getTopicByName = async (name) => {
-    const topic = await Topic.findOne({ topicName: name });
+    const topic = await Topic.findOne({ topicName: name }).populate('topicPosts')
     if (!topic) {
         throw new ApiError(httpStatus.NOT_FOUND, 'Topic not found');
     }

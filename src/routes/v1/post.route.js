@@ -15,8 +15,8 @@ const upload = multer({ fileFilter, storage: multer.memoryStorage() });
 router.post(
   '/create-post',
   auth(),
+  upload.single('postImageFile'),
   validate(postValidation.createPost),
-  upload.single('media'),
   checkFileSize,
   compressMedia,
   postController.createPost
@@ -25,13 +25,13 @@ router.post(
 router.patch(
   '/update-post',
   auth(),
+
   validate(postValidation.updatePost),
-  upload.single('media'),
   checkFileSize,
   postController.updatePost
 );
 // getPost (by ID)
-router.get('/get-post-by-id/:postId', auth(), validate(postValidation.getPostById), postController.getPostById);
+router.get('/get-post-by-id/:postId', validate(postValidation.getPostById), postController.getPostById);
 // like, dislike, save
 router.post('/post-interact', auth(), validate(postValidation.handlePostInteraction), postController.handlePostInteraction);
 // deletePost
@@ -39,4 +39,5 @@ router.delete('/delete-post', auth(), validate(postValidation.deletePost), postC
 // getPosts (by user)
 router.get('/get-posts', auth(), validate(postValidation.getPosts), postController.getPosts);
 
+router.post('/upload', upload.single('file'), postController.upload);
 module.exports = router;

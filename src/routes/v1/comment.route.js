@@ -7,8 +7,8 @@ const commentController = require('../../controllers/comment.controller');
 const router = express.Router();
 
 router.post('/create-comment', auth(), validate(commentValidation.createComment), commentController.createComment);
-router.post('/like-comment/:commentID', auth(), validate(commentValidation.likeComment), commentController.likeComment);
-router.post(
+router.put('/like-comment/:commentID', auth(), validate(commentValidation.likeComment), commentController.likeComment);
+router.put(
   '/dislike-comment/:commentID',
   auth(),
   validate(commentValidation.dislikeComment),

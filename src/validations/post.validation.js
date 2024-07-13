@@ -6,12 +6,12 @@ const createPost = {
     postContent: Joi.string().required(),
     postImageFile: Joi.any().optional(),
     postTopicID: Joi.string().required(),
-    postCreatorID: Joi.string().required(),
   },
 };
 
 const updatePost = {
   body: {
+    postID: Joi.string().required(),
     postTitle: Joi.string().optional(),
     postContent: Joi.string().optional(),
     postImageFile: Joi.any().optional(),
@@ -38,7 +38,7 @@ const deletePost = {
 };
 
 const getPosts = {
-  params: {
+  query: {
     page: Joi.number().required(),
     limit: Joi.number().required(),
   },

@@ -21,7 +21,7 @@ const dislikeComment = catchAsync(async (req, res) => {
 );
 
 const deleteComment = catchAsync(async (req, res) => {
-    await commentService.deleteComment(req.params.commentID);
+    await commentService.deleteComment(req.user.id, req.params.commentID);
     res.status(httpStatus.OK).send();
     }
 );
