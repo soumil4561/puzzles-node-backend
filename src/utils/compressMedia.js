@@ -1,27 +1,31 @@
+// const fs = require('fs');
 const httpStatus = require('http-status');
 const sharp = require('sharp');
 const ApiError = require('./ApiError');
+const logger = require('../config/logger');
 
 const compressImage = async ({ file }) => {
   try {
+    const newFilePath = file.path.replace('.', '-compressed.');
     if (file.mimetype.includes('webp')) {
-      const { data, info } = await sharp(file.buffer)
+      logger.info('File is already in webp format');
+      const { data, info } = await sharp(file.path)
         .webp({ lossless: true, quality: 80 }) // quality can be adjusted as per requirement
-        .toBuffer({ resolveWithObject: true });
+        .toFile(newFilePath, { resolveWithObject: true });
       return { data, info };
     }
     if (file.mimetype.includes('jpeg') || file.mimetype.includes('jpg')) {
-      const { data, info } = await sharp(file.buffer)
+      const { data, info } = await sharp(file.path)
         .jpeg({ lossless: true, quality: 80 })
         .toFormat('webp')
-        .toBuffer({ resolveWithObject: true });
+        .toFile(newFilePath, { resolveWithObject: true });
       return { data, info };
     }
     if (file.mimetype.includes('png')) {
-      const { data, info } = await sharp(file.buffer)
+      const { data, info } = await sharp(file.path)
         .png({ lossless: true, quality: 80 })
         .toFormat('webp')
-        .toBuffer({ resolveWithObject: true });
+        .toFile(newFilePath, { resolveWithObject: true });
       return { data, info };
     }
   } catch (err) {
@@ -31,22 +35,12 @@ const compressImage = async ({ file }) => {
 
 const compressMedia = async (req, res, next) => {
   try {
+    logger.info('Compressing media');
     if (!req.file && !req.files) {
       return next();
     }
+
     if (req.files) {
-      // const compressedFiles = [];
-      // req.files.forEach(async (file) => {
-      //   // check mimetype
-      //   if (!file.mimetype.includes('image')) {
-      //     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid file type');
-      //   }
-      //   const compressedFile = await compressImage({ file });
-      //   compressedFiles.push(compressedFile);
-      // });
-      // console.log(compressedFiles);
-      // req.files = compressedFiles;
-      // return next();
       const compressionPromises = req.files.map(async (file) => {
         // check mimetype
         if (!file.mimetype.includes('image')) {
@@ -54,7 +48,6 @@ const compressMedia = async (req, res, next) => {
         }
         return compressImage({ file });
       });
-      // Wait for all promises to resolve
       const compressedFiles = await Promise.all(compressionPromises);
       req.files = compressedFiles;
       return next();

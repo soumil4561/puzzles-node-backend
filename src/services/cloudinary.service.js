@@ -1,4 +1,5 @@
 const httpStatus = require('http-status');
+const fs = require('fs').promises;
 const ApiError = require('../utils/ApiError');
 const cloudinary = require('../config/cloudinary');
 const logger = require('../config/logger');
@@ -13,9 +14,11 @@ const uploadImage = async (fileName, file) => {
   };
 
   try {
-    const result = await cloudinary.uploader.upload(file, options);
+    const result = await cloudinary.uploader.upload(file.path, options);
+    await fs.rm(file.path); 
     return result;
   } catch (error) {
+    await fs.rm(file.path); 
     logger.error(error);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error uploading image');
   }

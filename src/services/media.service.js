@@ -2,7 +2,7 @@ const { uploadImage } = require('./cloudinary.service')
 
 const uploadPostMedia = async (file, postID) => {
     const uploadedImage = await uploadImage(postID, file);
-    return uploadedImage.sercure_url;
+    return uploadedImage;
 }
 
 module.exports = {
